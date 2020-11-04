@@ -49,7 +49,7 @@ function display(results) {
   });
 }
 
-async function fetchDisplayQuery(query, page) {
+async function fetchDisplayQuery(query) {
   try {
     const response = await fetch(query);
     const data = await response.json();
@@ -59,48 +59,54 @@ async function fetchDisplayQuery(query, page) {
     display(data.results);
   } catch (error) {
     console.log(error);
+    // error whenever page is empty or less than 1
     return 1;
   }
 }
 
-function makeQuery(searchBool, page, search = "") {
+function makeQuery(page, search = "") {
+  // function creates the string for query
   const apiKey = "e0ddda2b8af45601dfef37a0cd439cac";
   const defaultQuery = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&language=en-US&sort_by=vote_average.desc&include_adult=false&include_video=false&page=${page}&vote_count.gte=1000&vote_average.gte=8`;
   const searchQuery = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&language=en-US&query=${search}&page=${page}&include_adult=false`;
-  if (!searchBool) return defaultQuery;
+  // if search is empty, return the default query string
+  if (search == "") return defaultQuery;
   else return searchQuery;
 }
 
 function init() {
   let page = 1;
   let search;
-  let searchBool = 0;
 
   // display default query
-  const currentQuery = makeQuery(searchBool, page, search);
+  const currentQuery = makeQuery(page, search);
   fetchDisplayQuery(currentQuery);
 
   // event listener for search
   DOMSelectors.searchMovieSubmit.addEventListener("click", (e) => {
     e.preventDefault();
-    searchBool = 1;
+    page = 1;
     search = DOMSelectors.searchMovieTitle.value;
-    const currentQuery = makeQuery(searchBool, page, search)
+    const currentQuery = makeQuery(page, search)
     fetchDisplayQuery(currentQuery);
   });
 
+  // event listeners for pagination
   DOMSelectors.next.addEventListener("click", async function() {
+    // add the page first
     page++;
-    const currentQuery = makeQuery(searchBool, page, search);
-    const res = await fetchDisplayQuery(currentQuery, page);
-    if (res) page--;
+    // make query to go next page
+    const currentQuery = makeQuery(page, search);
+    const errBool = await fetchDisplayQuery(currentQuery);
+    // if there's an error, undo addition
+    if (errBool) page--;
   });
 
   DOMSelectors.prev.addEventListener("click", async function() {
     page--;
-    const currentQuery = makeQuery(searchBool, page, search);
-    const res = await fetchDisplayQuery(currentQuery);
-    if (res) page++;
+    const currentQuery = makeQuery(page, search);
+    const errBool = await fetchDisplayQuery(currentQuery);
+    if (errBool) page++;
   });
 }
 init();
